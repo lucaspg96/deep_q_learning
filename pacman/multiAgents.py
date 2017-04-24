@@ -9,6 +9,7 @@
 from util import manhattanDistance
 from game import Directions
 import random, util, math
+import numpy as np
 
 from game import Agent
 
@@ -95,6 +96,116 @@ class ReflexAgent(Agent):
 
   def distance(self,pos1,pos2):
     return abs(pos1[0]-pos2[0]) + abs(pos1[1]-pos2[1]) #manhatam distance
+
+class QAgent(Agent):
+  """
+    A reflex agent chooses an action at each choice point by examining
+    its alternatives via a state evaluation function.
+
+    The code below is provided as a guide.  You are welcome to change
+    it in any way you see fit, so long as you don't touch our method
+    headers.
+  """
+  def __init__(self):
+    self.w = np.random.rand(3)
+    self.alpha=0.006
+
+  def getAction(self, gameState):
+    """
+    You do not need to change this method, but you're welcome to.
+
+    getAction chooses among the best options according to the evaluation function.
+
+    Just like in the previous project, getAction takes a GameState and returns
+    some Directions.X for some X in the set {North, South, West, East, Stop}
+    """
+    # Collect legal moves and successor states
+    legalMoves = gameState.getLegalActions()
+
+    # Choose one of the best actions
+    scores = [self.evaluationFunction(gameState, action) for action in legalMoves]
+    bestScore = max(scores)
+    bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
+    chosenIndex = random.choice(bestIndices) # Pick randomly among the best
+
+    "Add more of your code here if you want to"
+    #print("Action: {}".format(legalMoves[chosenIndex]))
+    return legalMoves[chosenIndex]
+
+  def evaluationFunction(self, currGameState, pacManAction):
+    """
+    Design a better evaluation function here.
+
+    The evaluation function takes in the current and proposed successor
+    GameStates (pacman.py) and returns a number, where higher numbers are better.
+
+    The code below extracts some useful information from the state, like the
+    remaining food (oldFood) and Pacman position after moving (newPos).
+    newScaredTimes holds the number of moves that each ghost will remain
+    scared because of Pacman having eaten a power pellet.
+
+    Print out these variables to see what you're getting, then combine them
+    to create a masterful evaluation function.
+    """
+    nextGameState = currGameState.generatePacmanSuccessor(pacManAction)
+    val,features = self.computeQ(currGameState,pacManAction)
+    #print(currGameState.getPacmanPosition(),nextGameState.getPacmanPosition())
+    self.w = [self.w[i]+self.alpha*self.difference(nextGameState,val)*features[i] for i,_ in enumerate(self.w)]
+    print(self.w)
+    return val
+    #return nextGameState.getScore()
+
+  def difference(self,gameState,val):
+    legalMoves = gameState.getLegalActions()
+    scores = [self.computeQ(gameState, action)[0] for action in legalMoves]
+
+    r = 0
+    if self.countFood(gameState)==0:
+      r = 500
+
+    else:
+      pos = gameState.getPacmanPosition()
+      ghostStates = gameState.getGhostStates()
+      nearestGhostDistance = min([self.distance(pos,g.getPosition()) for g in ghostStates])
+      if(nearestGhostDistance==0):
+        r = -500
+
+    if len(scores)>0:
+      return r - max(scores) - val
+    else:
+      return r - val
+
+  def countFood(self,currGameState):
+    pos = currGameState.getPacmanPosition()
+    food = currGameState.getFood()
+    return len([self.distance(pos,(x,y)) for x,_ in enumerate(food) for y,_ in enumerate(food[x]) if food[x][y]])
+
+  def computeQ(self,currGameState,action):
+    features = []
+    # Useful information you can extract from a GameState (pacman.py)
+    nextGameState = currGameState.generatePacmanSuccessor(action) #"tabuleiro"
+    
+    newPos = nextGameState.getPacmanPosition() #coordenadas
+    
+    food = currGameState.getFood()
+    
+    nearestFoodDistanceNew = min([self.distance(newPos,(x,y)) for x,_ in enumerate(food) for y,_ in enumerate(food[x]) if food[x][y]])
+    
+    newGhostStates = nextGameState.getGhostStates()
+    nearestGhostDistanceNew = min([self.distance(newPos,g.getPosition()) for g in newGhostStates])
+    
+    newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates] #timer do medo do fantasma
+
+    remainFood = self.countFood(currGameState)
+    
+    features.append(nearestFoodDistanceNew)
+    features.append(nearestGhostDistanceNew)
+    features.append(float(1/remainFood))
+    return (np.dot(features,self.w),features)
+
+  def distance(self,pos1,pos2):
+    return abs(pos1[0]-pos2[0]) + abs(pos1[1]-pos2[1]) #manhatam distance
+
 
 def scoreEvaluationFunction(currentGameState):
   """
