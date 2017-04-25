@@ -107,8 +107,16 @@ class QAgent(Agent):
     headers.
   """
   def __init__(self):
-    self.w = np.random.rand(3)
     self.alpha=0.006
+    try:
+      self.w = np.loadtxt('q-wheigts')
+      print(self.w)
+    except Exception:
+      self.w = np.random.rand(3)
+
+  def saveWheigts(self):
+    #print(self.w)
+    np.savetxt('q-wheigts',self.w)
 
   def getAction(self, gameState):
     """
@@ -126,8 +134,8 @@ class QAgent(Agent):
     scores = [self.evaluationFunction(gameState, action) for action in legalMoves]
     bestScore = max(scores)
     bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
-    chosenIndex = random.choice(bestIndices) # Pick randomly among the best
-
+    #chosenIndex = random.choice(bestIndices) # Pick randomly among the best
+    chosenIndex = random.choice(range(len(scores)))# Pick randomly
     "Add more of your code here if you want to"
     #print("Action: {}".format(legalMoves[chosenIndex]))
     return legalMoves[chosenIndex]
@@ -151,7 +159,7 @@ class QAgent(Agent):
     val,features = self.computeQ(currGameState,pacManAction)
     #print(currGameState.getPacmanPosition(),nextGameState.getPacmanPosition())
     self.w = [self.w[i]+self.alpha*self.difference(nextGameState,val)*features[i] for i,_ in enumerate(self.w)]
-    print(self.w)
+    #print(self.w)
     return val
     #return nextGameState.getScore()
 

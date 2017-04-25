@@ -686,8 +686,15 @@ class Game:
       if _BOINC_ENABLED:
         boinc.set_fraction_done(self.getProgress())
 
+
     # inform a learning agent of the game result
     for agent in self.agents:
+      
+      try:
+        agent.saveWheigts()
+      except Exception:
+        pass
+
       if "final" in dir( agent ) :
         try:
           self.mute()
