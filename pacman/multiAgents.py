@@ -113,8 +113,9 @@ class QAgent(Agent):
       self.w = np.loadtxt('q-wheigts')
       print(self.w)
     except Exception:
-      self.w = np.random.rand(3)
-      self.agent = ReflexAgent()
+      self.w = np.random.rand(2)
+    
+    self.agent = ReflexAgent()
 
   def saveWheigts(self):
     print(self.w)
@@ -138,6 +139,8 @@ class QAgent(Agent):
 
     # Choose one of the best actions
     scores = [self.computeQ(gameState, action)[0] for action in legalMoves]
+    #print(legalMoves)
+    #print(scores)
     bestScore = max(scores)
     bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
     chosenIndex = random.choice(bestIndices) # Pick randomly among the best
@@ -145,7 +148,11 @@ class QAgent(Agent):
     "Add more of your code here if you want to"
     #print("Action: {}".format(legalMoves[chosenIndex]))
     self.evaluate(gameState,legalMoves[chosenIndex])
-    return legalMoves[chosenIndex]
+    
+    action = legalMoves[chosenIndex]
+    #action = self.agent.getAction(gameState)
+
+    return action
     #return self.agent.getAction(gameState)
 
   def evaluate(self, currGameState, pacManAction):
@@ -175,15 +182,15 @@ class QAgent(Agent):
     scores = [self.computeQ(gameState, action)[0] for action in legalMoves]
 
     r = gameState.getScore()
-    if self.countFood(gameState)==0:
-      r = 500
+    # if self.countFood(gameState)==0:
+    #   r = 500
 
-    else:
-      pos = gameState.getPacmanPosition()
-      ghostStates = gameState.getGhostStates()
-      nearestGhostDistance = min([self.distance(pos,g.getPosition()) for g in ghostStates])
-      if(nearestGhostDistance==0):
-        r = -500
+    # else:
+    #   pos = gameState.getPacmanPosition()
+    #   ghostStates = gameState.getGhostStates()
+    #   nearestGhostDistance = min([self.distance(pos,g.getPosition()) for g in ghostStates])
+    #   if(nearestGhostDistance==0):
+    #     r = -500
 
     if len(scores)>0:
       return r - max(scores) - val
@@ -222,8 +229,11 @@ class QAgent(Agent):
       features.append(10)
 
     #print(nextGameState.getNumFood())
-    progress = 1 - float(nextGameState.getNumFood()/self.totalFood)
-    features.append(progress*nearestFoodDistanceNew)
+    #progress = 1 - float(nextGameState.getNumFood()/self.totalFood)
+    #features.append(progress*nearestFoodDistanceNew)
+    # if action=='Stop':
+    #   return(0,features)
+
     return (np.dot(features,self.w),features)
 
   def distance(self,pos1,pos2):
