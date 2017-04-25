@@ -108,6 +108,7 @@ class QAgent(Agent):
   """
   def __init__(self):
     self.alpha=0.0004
+    self.first=True
     try:
       self.w = np.loadtxt('q-wheigts')
       print(self.w)
@@ -116,7 +117,7 @@ class QAgent(Agent):
       self.agent = ReflexAgent()
 
   def saveWheigts(self):
-    #print(self.w)
+    print(self.w)
     np.savetxt('q-wheigts',self.w)
 
   def getAction(self, gameState):
@@ -129,20 +130,25 @@ class QAgent(Agent):
     some Directions.X for some X in the set {North, South, West, East, Stop}
     """
     # Collect legal moves and successor states
+    if(self.first):
+      self.totalFood = gameState.getNumFood()
+      self.first = False
+
     legalMoves = gameState.getLegalActions()
 
     # Choose one of the best actions
-    scores = [self.evaluationFunction(gameState, action) for action in legalMoves]
+    scores = [self.computeQ(gameState, action)[0] for action in legalMoves]
     bestScore = max(scores)
     bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
     chosenIndex = random.choice(bestIndices) # Pick randomly among the best
     #chosenIndex = random.choice(range(len(scores)))# Pick randomly
     "Add more of your code here if you want to"
     #print("Action: {}".format(legalMoves[chosenIndex]))
+    self.evaluate(gameState,legalMoves[chosenIndex])
     return legalMoves[chosenIndex]
     #return self.agent.getAction(gameState)
 
-  def evaluationFunction(self, currGameState, pacManAction):
+  def evaluate(self, currGameState, pacManAction):
     """
     Design a better evaluation function here.
 
@@ -162,14 +168,13 @@ class QAgent(Agent):
     #print(currGameState.getPacmanPosition(),nextGameState.getPacmanPosition())
     self.w = [self.w[i]+self.alpha*self.difference(nextGameState,val)*features[i] for i,_ in enumerate(self.w)]
     #print(self.w)
-    return val
     #return nextGameState.getScore()
 
   def difference(self,gameState,val):
     legalMoves = gameState.getLegalActions()
     scores = [self.computeQ(gameState, action)[0] for action in legalMoves]
 
-    r = -1
+    r = gameState.getScore()
     if self.countFood(gameState)==0:
       r = 500
 
@@ -210,13 +215,15 @@ class QAgent(Agent):
     if nearestFoodDistanceNew>0:
       features.append(float(1/nearestFoodDistanceNew))
     else:
-      features.append(1)
+      features.append(10)
     if nearestGhostDistanceNew>0:
       features.append(float(1/nearestGhostDistanceNew))
     else:
-      features.append(1)
+      features.append(10)
 
-    features.append(float(1/remainFood))
+    #print(nextGameState.getNumFood())
+    progress = 1 - float(nextGameState.getNumFood()/self.totalFood)
+    features.append(progress*nearestFoodDistanceNew)
     return (np.dot(features,self.w),features)
 
   def distance(self,pos1,pos2):
