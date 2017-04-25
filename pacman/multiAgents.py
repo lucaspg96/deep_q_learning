@@ -107,7 +107,7 @@ class QAgent(Agent):
     headers.
   """
   def __init__(self):
-    self.alpha=0.0006
+    self.alpha=0.0004
     try:
       self.w = np.loadtxt('q-wheigts')
       print(self.w)
@@ -169,7 +169,7 @@ class QAgent(Agent):
     legalMoves = gameState.getLegalActions()
     scores = [self.computeQ(gameState, action)[0] for action in legalMoves]
 
-    r = 0
+    r = -1
     if self.countFood(gameState)==0:
       r = 500
 
