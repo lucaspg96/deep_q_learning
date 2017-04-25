@@ -107,12 +107,13 @@ class QAgent(Agent):
     headers.
   """
   def __init__(self):
-    self.alpha=0.006
+    self.alpha=0.0006
     try:
       self.w = np.loadtxt('q-wheigts')
       print(self.w)
     except Exception:
       self.w = np.random.rand(3)
+      self.agent = ReflexAgent()
 
   def saveWheigts(self):
     #print(self.w)
@@ -134,11 +135,12 @@ class QAgent(Agent):
     scores = [self.evaluationFunction(gameState, action) for action in legalMoves]
     bestScore = max(scores)
     bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
-    #chosenIndex = random.choice(bestIndices) # Pick randomly among the best
-    chosenIndex = random.choice(range(len(scores)))# Pick randomly
+    chosenIndex = random.choice(bestIndices) # Pick randomly among the best
+    #chosenIndex = random.choice(range(len(scores)))# Pick randomly
     "Add more of your code here if you want to"
     #print("Action: {}".format(legalMoves[chosenIndex]))
     return legalMoves[chosenIndex]
+    #return self.agent.getAction(gameState)
 
   def evaluationFunction(self, currGameState, pacManAction):
     """
@@ -205,9 +207,15 @@ class QAgent(Agent):
     newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates] #timer do medo do fantasma
 
     remainFood = self.countFood(currGameState)
-    
-    features.append(nearestFoodDistanceNew)
-    features.append(nearestGhostDistanceNew)
+    if nearestFoodDistanceNew>0:
+      features.append(float(1/nearestFoodDistanceNew))
+    else:
+      features.append(1)
+    if nearestGhostDistanceNew>0:
+      features.append(float(1/nearestGhostDistanceNew))
+    else:
+      features.append(1)
+
     features.append(float(1/remainFood))
     return (np.dot(features,self.w),features)
 
