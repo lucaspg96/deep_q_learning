@@ -107,7 +107,7 @@ class QAgent(Agent):
     headers.
   """
   def __init__(self):
-    self.alpha=0.0004
+    self.alpha=0.00004
     self.first=True
     try:
       self.w = np.loadtxt('q-wheigts')
