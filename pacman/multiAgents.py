@@ -107,7 +107,7 @@ class QAgent(Agent):
     headers.
   """
   def __init__(self):
-    self.alpha=0.00004
+    self.alpha=0.000
     self.first=True
     try:
       self.w = np.loadtxt('q-wheigts')
@@ -227,12 +227,6 @@ class QAgent(Agent):
       features.append(float(1/nearestGhostDistanceNew))
     else:
       features.append(10)
-
-    #print(nextGameState.getNumFood())
-    #progress = 1 - float(nextGameState.getNumFood()/self.totalFood)
-    #features.append(progress*nearestFoodDistanceNew)
-    # if action=='Stop':
-    #   return(0,features)
 
     return (np.dot(features,self.w),features)
 
