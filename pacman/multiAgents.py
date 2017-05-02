@@ -107,18 +107,19 @@ class QAgent(Agent):
     headers.
   """
   def __init__(self):
-    self.alpha=0.000
+    self.alpha=0.00
     self.first=True
+    self.gama = 0.8
     try:
       self.w = np.loadtxt('q-wheigts')
-      print(self.w)
+      #print(self.w)
     except Exception:
-      self.w = np.random.rand(2)
+      self.w = np.random.rand(4)
     
     self.agent = ReflexAgent()
 
   def saveWheigts(self):
-    print(self.w)
+    #print(self.w)
     np.savetxt('q-wheigts',self.w)
 
   def getAction(self, gameState):
@@ -193,17 +194,12 @@ class QAgent(Agent):
     #     r = -500
 
     if len(scores)>0:
-      return r - max(scores) - val
+      return r + self.gama*max(scores) - val
     else:
       return r - val
 
-  def countFood(self,currGameState):
-    pos = currGameState.getPacmanPosition()
-    food = currGameState.getFood()
-    return len([self.distance(pos,(x,y)) for x,_ in enumerate(food) for y,_ in enumerate(food[x]) if food[x][y]])
-
   def computeQ(self,currGameState,action):
-    features = []
+    features = [1] #bias
     # Useful information you can extract from a GameState (pacman.py)
     nextGameState = currGameState.generatePacmanSuccessor(action) #"tabuleiro"
     
@@ -211,22 +207,23 @@ class QAgent(Agent):
     
     food = currGameState.getFood()
     
-    nearestFoodDistanceNew = min([self.distance(newPos,(x,y)) for x,_ in enumerate(food) for y,_ in enumerate(food[x]) if food[x][y]])
+    nearestFoodDistance = min([self.distance(newPos,(x,y)) for x,_ in enumerate(food) for y,_ in enumerate(food[x]) if food[x][y]])
     
     newGhostStates = nextGameState.getGhostStates()
-    nearestGhostDistanceNew = min([self.distance(newPos,g.getPosition()) for g in newGhostStates])
+    countNearestGhosts = len([g for g in newGhostStates if self.distance(newPos,g.getPosition())<=1])
     
     newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates] #timer do medo do fantasma
 
-    remainFood = self.countFood(currGameState)
-    if nearestFoodDistanceNew>0:
-      features.append(float(1/nearestFoodDistanceNew))
+    # if nearestFoodDistanceNew>0:
+    #   features.append(float(1/nearestFoodDistanceNew))
+    # else:
+    #   features.append(10)
+    features.append(nearestFoodDistance)
+    features.append(countNearestGhosts)
+    if nearestFoodDistance<=1:
+      features.append(1)
     else:
-      features.append(10)
-    if nearestGhostDistanceNew>0:
-      features.append(float(1/nearestGhostDistanceNew))
-    else:
-      features.append(10)
+      features.append(0)
 
     return (np.dot(features,self.w),features)
 
