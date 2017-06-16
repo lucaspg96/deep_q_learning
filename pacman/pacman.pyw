@@ -1485,7 +1485,7 @@ else: js=None
 
 global_step = 1
 aux_step = 0
-observe = 100
+observe = 0
 FRAMES_FOR_STEP = 8
 
 action = None
@@ -1625,17 +1625,19 @@ while True:
     pygame.display.flip()
     
     if thisGame.mode==1 and action!=None:
-        reward = 0
-        
-        if thisGame.score!=last_score:
-            reward+=(thisGame.score-last_score)
-            last_score = thisGame.score
 
         if aux_step%FRAMES_FOR_STEP == 0:
+
+            reward = 0
+        
+            if thisGame.score!=last_score:
+                reward+=(thisGame.score-last_score)
+                last_score = thisGame.score
+
             global_step+=1
             learn.storeMem(pygame.surfarray.array3d(window),reward,action)
-            if global_step>observe:
-                learn.train()
+            # if global_step>observe:
+            #     learn.train()
             print("Global_Step {} concluded with reward {}".format(global_step,reward))
         
         aux_step+=1
