@@ -1485,7 +1485,7 @@ else: js=None
 
 global_step = 1
 aux_step = 0
-observe = 0
+observe = 100
 FRAMES_FOR_STEP = 8
 
 action = None
@@ -1498,7 +1498,7 @@ while True:
         # normal gameplay mode
         #CheckInputs()
         if global_step==1:
-            learn.init(pygame.surfarray.array3d(window),observe)
+            learn.init(5,observe,"pacman",pygame.surfarray.array3d(window))
 
         if aux_step%FRAMES_FOR_STEP==0:
             print("--------------------------------------------------")
@@ -1636,8 +1636,8 @@ while True:
 
             global_step+=1
             learn.storeMem(pygame.surfarray.array3d(window),reward,action)
-            # if global_step>observe:
-            #     learn.train()
+            if global_step>observe:
+                learn.train()
             print("Global_Step {} concluded with reward {}".format(global_step,reward))
         
         aux_step+=1
