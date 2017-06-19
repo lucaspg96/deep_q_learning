@@ -18,6 +18,7 @@ from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.optimizers import SGD , Adam
 import tensorflow as tf
 
+
 from skimage import io, exposure, img_as_uint, img_as_float
 
 ACTIONS = 4 # number of valid actions
@@ -40,17 +41,18 @@ def buildmodel(name):
     model = Sequential()
     try:
         print("Trying load model for {}".format(name))
-        model.load_weights("{}.h5".format(name))
+        with open("{}.json".format(name)) as f:
+            model = model_from_json(f.read())
         print("Model loaded")
 
     except Exception as e:
         print("Model not found. Building new model")
         if len(model_shape)==3:    
-            model.add(Convolution2D(50, 8, 8,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
+            model.add(Convolution2D(6, 8, 8,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
             # model.add(Activation('relu'))
-            model.add(Convolution2D(100, 4, 4,activation="relu", subsample=(2, 2), border_mode='same'))
+            model.add(Convolution2D(10, 4, 4,activation="relu", subsample=(2, 2), border_mode='same'))
             # model.add(Activation('relu'))
-            model.add(Convolution2D(100, 3, 3,activation="relu", subsample=(1, 1), border_mode='same'))
+            model.add(Convolution2D(10, 3, 3,activation="relu", subsample=(1, 1), border_mode='same'))
             # model.add(Activation('relu'))
         else:
             model.add(Convolution2D(50, 8, 1,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
@@ -64,14 +66,14 @@ def buildmodel(name):
         model.add(Dense(512))
         model.add(Activation('relu'))
         model.add(Dense(ACTIONS))
-       
+           
         adam = Adam(lr=LEARNING_RATE)
         model.compile(loss='mse',optimizer=adam)
         print("We finish building the model")
 
-        model.save_weights("{}.h5".format(name), overwrite=True)
-        with open("{}.json".format(name), "w") as outfile:
-            json.dump(model.to_json(), outfile)
+        # #model.save_weights("{}.h5".format(name), overwrite=True)
+        # with open("{}.json".format(name), "w") as outfile:
+        #     json.dump(model.to_json(), outfile)
     
     return model
 
@@ -197,7 +199,7 @@ def train():
     if step % 300 == 0:
         global game
         print("Saving the model")
-        model.save_weights("{}.h5".format(game), overwrite=True)
+        #model.save_weights("{}.h5".format(game), overwrite=True)
         with open("{}.json".format(game), "w") as outfile:
             json.dump(model.to_json(), outfile)
     return loss

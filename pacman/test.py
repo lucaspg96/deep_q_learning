@@ -11,6 +11,7 @@ def run_game(game_name,epochs,ev,observe=50):
 	points = []
 
 	print("Starting observations:")
+	record = 0
 	for i in trange(epochs+ev):
 		#keep restarting game when ends 
 	    t = 0
@@ -28,12 +29,18 @@ def run_game(game_name,epochs,ev,observe=50):
 	        	action = learn.getAction(observation)
 
 	        observation, reward, done, info = env.step(action)
+
 	        s+=reward
 	        learn.storeMem(observation,reward,action)
+
 	        if step>observe:
 	        	loss = learn.train()
+
 	        if done:
-	        	if i>epochs:
+	        	if s>record:
+	        		record = s
+	        		print("New record: {}".format(record))
+	        	if i>=epochs:
 	        		points.append(s)
 	        	break
 
@@ -60,10 +67,15 @@ def run_game(game_name,epochs,ev,observe=50):
 	return points
 
 #Main bloc ---------------------------------------
-games = ['CartPole-v0', 'MountainCar-v0','LunarLander-v2']
+games = [ \
+		'CartPole-v0' \
+		,'MountainCar-v0' \
+		,'LunarLander-v2' \
+		,'MsPacman-ram-v0'
+		]
 for game_name in games:
 	epochs = 10000
-	ev = 100
+	ev = 1000
 	points = run_game(game_name,epochs,ev,100)
 	mean = float(sum(points)/len(points))
 	print("Mean score: {}".format(mean))
