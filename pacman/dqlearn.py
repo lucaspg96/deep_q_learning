@@ -8,7 +8,6 @@ import sys
 import random
 import numpy as np
 from collections import deque
-import cv2
 import json
 from keras import initializers
 from keras.initializers import normal, identity
@@ -78,7 +77,7 @@ def buildmodel(name):
 
 model = None
 
-D = deque()
+D = None
 s_t = []
 
 def processImage(image):
@@ -98,10 +97,12 @@ def init(n_actions,game_name,image,batch=100):
     global game
     global model_shape
     global BATCH
+    global D
 
     step = 0
     ACTIONS = n_actions
     BATCH = batch
+    D = deque()
     x_t = processImage(image)
 
     if len(image.shape)==1:
@@ -116,7 +117,8 @@ def init(n_actions,game_name,image,batch=100):
     model = buildmodel(game)
     
     s_t = np.stack((x_t,x_t,x_t,x_t),axis=2)
-    s_t = s_t.reshape(1, s_t.shape[0], s_t.shape[1], s_t.shape[2])  #1*80*80*4   
+    s_t = s_t.reshape(1, s_t.shape[0], s_t.shape[1], s_t.shape[2])  #1*80*80*4 
+    print(s_t.shape,model_shape)  
 
 def getAction(image):
     global s_t
@@ -192,11 +194,11 @@ def train():
     # targets2 = normalize(targets)
     loss += model.train_on_batch(inputs, targets)
     # save progress every 100 iterations
-    if step % 100 == 0:
+    if step % 300 == 0:
         global game
         print("Saving the model")
         model.save_weights("{}.h5".format(game), overwrite=True)
-        with open("{}.h5".format(game), "w") as outfile:
+        with open("{}.json".format(game), "w") as outfile:
             json.dump(model.to_json(), outfile)
     return loss
 
