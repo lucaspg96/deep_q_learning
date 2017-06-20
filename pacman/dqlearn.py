@@ -11,7 +11,7 @@ from collections import deque
 import json
 from keras import initializers
 from keras.initializers import normal, identity
-from keras.models import model_from_json
+from keras.models import model_from_json, load_model
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
@@ -39,38 +39,41 @@ def buildmodel(name):
     global model_shape
 
     model = Sequential()
+
+    if len(model_shape)==3:    
+        model.add(Convolution2D(30, 8, 8,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
+        # model.add(Activation('relu'))
+        model.add(Convolution2D(50, 4, 4,activation="relu", subsample=(2, 2), border_mode='same'))
+        # model.add(Activation('relu'))
+        model.add(Convolution2D(50, 3, 3,activation="relu", subsample=(1, 1), border_mode='same'))
+        # model.add(Activation('relu'))
+    else:
+        model.add(Convolution2D(6, 8, 1,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
+        # model.add(Activation('relu'))
+        model.add(Convolution2D(10, 4, 1,activation="relu", subsample=(2, 2), border_mode='same'))
+        # model.add(Activation('relu'))
+        model.add(Convolution2D(10, 3, 1,Activationvation="relu", subsample=(1, 1), border_mode='same'))
+        # model.add(Activation('relu'))
+    
+    model.add(Flatten())
+    model.add(Dense(512))
+    model.add(Activation('relu'))
+    model.add(Dense(ACTIONS))
+       
+    adam = Adam(lr=LEARNING_RATE)
+    model.compile(loss='mse',optimizer=adam)
+    print("We finish building the model")
+
     try:
-        print("Trying load model for {}".format(name))
-        with open("{}.json".format(name)) as f:
-            model = model_from_json(f.read())
-        model.load_weights("{}.h5".format(name))
-        print("Model loaded")
+        print("Trying load model weights for {}".format(name))
+        # with open("{}.json".format(name)) as f:
+        #     model = model_from_json(f.read())
+        model = load_model("{}.h5".format(name))
+        print("Weights loaded")
 
     except Exception as e:
-        print("Model not found. Building new model")
-        if len(model_shape)==3:    
-            model.add(Convolution2D(30, 8, 8,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
-            # model.add(Activation('relu'))
-            model.add(Convolution2D(50, 4, 4,activation="relu", subsample=(2, 2), border_mode='same'))
-            # model.add(Activation('relu'))
-            model.add(Convolution2D(50, 3, 3,activation="relu", subsample=(1, 1), border_mode='same'))
-            # model.add(Activation('relu'))
-        else:
-            model.add(Convolution2D(6, 8, 1,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
-            # model.add(Activation('relu'))
-            model.add(Convolution2D(10, 4, 1,activation="relu", subsample=(2, 2), border_mode='same'))
-            # model.add(Activation('relu'))
-            model.add(Convolution2D(10, 3, 1,Activationvation="relu", subsample=(1, 1), border_mode='same'))
-            # model.add(Activation('relu'))
-        
-        model.add(Flatten())
-        model.add(Dense(512))
-        model.add(Activation('relu'))
-        model.add(Dense(ACTIONS))
-           
-        adam = Adam(lr=LEARNING_RATE)
-        model.compile(loss='mse',optimizer=adam)
-        print("We finish building the model")
+        print(e)
+        print("Model weights not found".format(name))
 
         # #model.save_weights("{}.h5".format(name), overwrite=True)
         # with open("{}.json".format(name), "w") as outfile:
@@ -200,9 +203,9 @@ def train():
     if step % 300 == 0:
         global game
         print("Saving the model")
-        model.save_weights("{}.h5".format(game), overwrite=True)
-        with open("{}.json".format(game), "w") as outfile:
-            json.dump(model.to_json(), outfile)
+        model.save("{}.h5".format(game), overwrite=True)
+        # with open("{}.json".format(game), "w") as outfile:
+        #     json.dump(model.to_json(), outfile)
     return loss
 
 def saveImage(img):
