@@ -17,7 +17,7 @@ def run_game(game_name,epochs,ev,observe=50):
 	    t = 0
 	    s=0
 	    while True: # run for 100 timesteps or until done, whichever is first
-	    	env.render()
+	    	#env.render()
 	        t+=1
 	        if step==observe:
 	        	print("Starting train")
@@ -68,15 +68,16 @@ def run_game(game_name,epochs,ev,observe=50):
 
 #Main bloc ---------------------------------------
 games = [ \
-		'CartPole-v0' \
-		,'MountainCar-v0' \
-		,'LunarLander-v2' \
-		,'MsPacman-ram-v0'
+		#'CartPole-v0' \
+		# ,'MountainCar-v0' \
+		# ,'LunarLander-v2' \
+		# ,'MsPacman-v0'
+		'Breakout-v0'
 		]
 for game_name in games:
 	epochs = 10000
 	ev = 1000
-	points = run_game(game_name,epochs,ev,100)
+	points = run_game(game_name,epochs,ev,500)
 	mean = float(sum(points)/len(points))
 	print("Mean score: {}".format(mean))
 	bot.send("{} trained {} epochs and evaluated in {} scores".format(game_name,epochs,mean))

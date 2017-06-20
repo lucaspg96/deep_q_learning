@@ -43,23 +43,24 @@ def buildmodel(name):
         print("Trying load model for {}".format(name))
         with open("{}.json".format(name)) as f:
             model = model_from_json(f.read())
+        model.load_weights("{}.h5".format(name))
         print("Model loaded")
 
     except Exception as e:
         print("Model not found. Building new model")
         if len(model_shape)==3:    
-            model.add(Convolution2D(6, 8, 8,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
+            model.add(Convolution2D(30, 8, 8,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
             # model.add(Activation('relu'))
-            model.add(Convolution2D(10, 4, 4,activation="relu", subsample=(2, 2), border_mode='same'))
+            model.add(Convolution2D(50, 4, 4,activation="relu", subsample=(2, 2), border_mode='same'))
             # model.add(Activation('relu'))
-            model.add(Convolution2D(10, 3, 3,activation="relu", subsample=(1, 1), border_mode='same'))
+            model.add(Convolution2D(50, 3, 3,activation="relu", subsample=(1, 1), border_mode='same'))
             # model.add(Activation('relu'))
         else:
-            model.add(Convolution2D(50, 8, 1,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
+            model.add(Convolution2D(6, 8, 1,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
             # model.add(Activation('relu'))
-            model.add(Convolution2D(100, 4, 1,activation="relu", subsample=(2, 2), border_mode='same'))
+            model.add(Convolution2D(10, 4, 1,activation="relu", subsample=(2, 2), border_mode='same'))
             # model.add(Activation('relu'))
-            model.add(Convolution2D(100, 3, 1,Activationvation="relu", subsample=(1, 1), border_mode='same'))
+            model.add(Convolution2D(10, 3, 1,Activationvation="relu", subsample=(1, 1), border_mode='same'))
             # model.add(Activation('relu'))
         
         model.add(Flatten())
@@ -87,7 +88,7 @@ def processImage(image):
         x_t = np.reshape(image,(image.shape[0],1))
     else:
         x_t = skimage.color.rgb2gray(image)
-        #x_t = skimage.transform.resize(x_t,(img_rows,img_cols))
+        x_t = skimage.transform.resize(x_t,(img_rows,img_cols))
         x_t = skimage.exposure.rescale_intensity(x_t,out_range=(0,255))
     return x_t
 
@@ -112,7 +113,7 @@ def init(n_actions,game_name,image,batch=100):
         game = game_name    
         
     else:
-        model_shape = (x_t.shape[0],x_t.shape[1],4)
+        model_shape = (img_rows,img_cols,4)
         game = "{}({}x{})".format(game_name,x_t.shape[0],x_t.shape[1])
         saveImage(x_t)
     
@@ -199,7 +200,7 @@ def train():
     if step % 300 == 0:
         global game
         print("Saving the model")
-        #model.save_weights("{}.h5".format(game), overwrite=True)
+        model.save_weights("{}.h5".format(game), overwrite=True)
         with open("{}.json".format(game), "w") as outfile:
             json.dump(model.to_json(), outfile)
     return loss
@@ -211,4 +212,4 @@ def saveImage(img):
     im = exposure.rescale_intensity(img, out_range='float')
     im = img_as_uint(im)
 
-    io.imsave('test({}x{}).png'.format(x_t.shape[0],x_t.shape[1]), im)
+    io.imsave('test({}x{}).png'.format(img.shape[0],img.shape[1]), im)

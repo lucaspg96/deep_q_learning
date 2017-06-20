@@ -1,0 +1,5 @@
+*.pyc
+pacman/*.pyc
+pacman/pycache/*
+
+pacman/bot.py
