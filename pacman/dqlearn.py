@@ -40,19 +40,19 @@ def buildmodel(name):
 
     model = Sequential()
 
-    if len(model_shape)==3:    
+    if(model_shape[1]==1):
+        model.add(Convolution2D(30, 8, 1,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
+        # model.add(Activation('relu'))
+        model.add(Convolution2D(50, 4, 1,activation="relu", subsample=(2, 2), border_mode='same'))
+        # model.add(Activation('relu'))
+        model.add(Convolution2D(50, 3, 1,activation="relu", subsample=(1, 1), border_mode='same'))
+        # model.add(Activation('relu'))
+    else:        
         model.add(Convolution2D(30, 8, 8,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
         # model.add(Activation('relu'))
         model.add(Convolution2D(50, 4, 4,activation="relu", subsample=(2, 2), border_mode='same'))
         # model.add(Activation('relu'))
         model.add(Convolution2D(50, 3, 3,activation="relu", subsample=(1, 1), border_mode='same'))
-        # model.add(Activation('relu'))
-    else:
-        model.add(Convolution2D(6, 8, 1,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
-        # model.add(Activation('relu'))
-        model.add(Convolution2D(10, 4, 1,activation="relu", subsample=(2, 2), border_mode='same'))
-        # model.add(Activation('relu'))
-        model.add(Convolution2D(10, 3, 1,Activationvation="relu", subsample=(1, 1), border_mode='same'))
         # model.add(Activation('relu'))
     
     model.add(Flatten())
@@ -60,7 +60,7 @@ def buildmodel(name):
     model.add(Activation('relu'))
     model.add(Dense(ACTIONS))
        
-    adam = Adam(lr=LEARNING_RATE)
+    adam = Adam(lr=LEARNING_RATE, decay = 0.001)
     model.compile(loss='mse',optimizer=adam)
     print("We finish building the model")
 

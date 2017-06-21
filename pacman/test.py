@@ -71,13 +71,14 @@ games = [ \
 		#'CartPole-v0' \
 		# ,'MountainCar-v0' \
 		# ,'LunarLander-v2' \
-		# ,'MsPacman-v0'
-		'Breakout-v0'
+		#'MsPacman-v0'
+		'Pong-v0'
+		#'Breakout-v0'
 		]
 for game_name in games:
-	epochs = 10000
-	ev = 1000
-	points = run_game(game_name,epochs,ev,500)
+	epochs = 1000
+	ev = 100
+	points = run_game(game_name,epochs,ev,100)
 	mean = float(sum(points)/len(points))
 	print("Mean score: {}".format(mean))
 	bot.send("{} trained {} epochs and evaluated in {} scores".format(game_name,epochs,mean))
