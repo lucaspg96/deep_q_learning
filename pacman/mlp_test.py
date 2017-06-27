@@ -3,7 +3,7 @@ import mlp_learning as learn
 from tqdm import trange
 import bot
 
-def run_game(game_name,epochs,ev,observe=50):
+def run_game(game_name,epochs,ev,observe=100):
 	env = gym.make(game_name)
 	observation = env.reset() # reset for each new trial
 	learn.init(env.action_space.n,game_name,observation,batch=128)
@@ -67,6 +67,7 @@ def run_game(game_name,epochs,ev,observe=50):
 #Main bloc ---------------------------------------
 games = [ \
 		'CartPole-v0' \
+		#'MsPacman-ram-v0'
 		# ,'MountainCar-v0' \
 		# ,'LunarLander-v2' \
 		# 'MsPacman-v0'
@@ -75,8 +76,8 @@ games = [ \
 		#'Breakout-v0'
 		]
 for game_name in games:
-	epochs = 10000
-	ev = 1000
+	epochs = 5000
+	ev = 2000
 	points = run_game(game_name,epochs,ev,1000)
 	mean = float(sum(points)/len(points))
 	print("Mean score: {}".format(mean))

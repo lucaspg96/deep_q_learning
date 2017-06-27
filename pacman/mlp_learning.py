@@ -25,7 +25,7 @@ ACTIONS = 0 # number of valid actions
 GAMMA = 0.90 # decay rate of past observations
 REPLAY_MEMORY = 50000 # number of previous transitions to remember
 BATCH = 0 # size of minibatch
-LEARNING_RATE = 0.0005
+LEARNING_RATE = 0.01
 FRAMES = 1
 
 model_shape = None
@@ -40,7 +40,7 @@ def buildmodel(name):
     # model.add(Dense(20,activation="sigmoid"))
     # model.add(Dense(ACTIONS))
        
-    adam = Adam(lr=LEARNING_RATE, decay = 0.001)
+    adam = Adam(lr=LEARNING_RATE, decay = 0.01)
     model.compile(loss='mse',optimizer=adam)
     print("We finish building the model")
 
