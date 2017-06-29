@@ -4,7 +4,7 @@ import skimage as skimage
 from skimage import transform, color, exposure
 from skimage.transform import rotate
 from skimage.viewer import ImageViewer
-import sys
+from os import system as sys
 import random
 import numpy as np
 from collections import deque
@@ -22,37 +22,40 @@ import tensorflow as tf
 from skimage import io, exposure, img_as_uint, img_as_float
 
 ACTIONS = 0 # number of valid actions
-GAMMA = 0.90 # decay rate of past observations
+GAMMA = 0.95 # decay rate of past observations
 REPLAY_MEMORY = 50000 # number of previous transitions to remember
 BATCH = 0 # size of minibatch
-LEARNING_RATE = 0.01
+LEARNING_RATE = 0.05
 FRAMES = 1
-
+epsilon = 1
+epsilon_decay = 0.99
 model_shape = None
 step = 0
 game = ""
 
 def buildmodel(name):
+    print("Initialyzing model...")
     model = Sequential()
     print("Model dim:",model_shape)
-    model.add(Dense(ACTIONS,activation="sigmoid",input_dim=model_shape))
-    # model.add(Dense(30,activation="sigmoid"))
+    model.add(Dense(18,activation="sigmoid",input_dim=model_shape))
+    model.add(Dense(ACTIONS,activation="sigmoid"))
     # model.add(Dense(20,activation="sigmoid"))
     # model.add(Dense(ACTIONS))
        
-    adam = Adam(lr=LEARNING_RATE, decay = 0.01)
-    model.compile(loss='mse',optimizer=adam)
+    #optimizer = Adam(lr=LEARNING_RATE, decay = 0.001)
+    optimizer = SGD(lr=LEARNING_RATE,decay=0.01)
+    model.compile(loss='mse',optimizer=optimizer,metrics=["accuracy"])
     print("We finish building the model")
 
     try:
         print("Trying load model weights for {}".format(name))
         # with open("{}.json".format(name)) as f:
         #     model = model_from_json(f.read())
-        model = load_model("{}.h5".format(name))
+        model = load_model("{}/model.h5".format(name))
         print("Weights loaded")
 
     except Exception as e:
-        print(e)
+        #print(e)
         print("Model weights not found".format(name))
 
         # #model.save_weights("{}.h5".format(name), overwrite=True)
@@ -65,8 +68,7 @@ model = None
 last_state = None
 D = None
 
-def init(n_actions,game_name,observation,batch=10):
-    global s_t
+def init(n_actions,game_name,observation,batch=32):
     global ACTIONS
     global model
     global step
@@ -75,7 +77,8 @@ def init(n_actions,game_name,observation,batch=10):
     global BATCH
     global D
     global last_state
-    print("Initialyzing model...")
+
+
     step = 0
     ACTIONS = n_actions
     BATCH = batch
@@ -86,22 +89,43 @@ def init(n_actions,game_name,observation,batch=10):
 
     game = game_name    
 
+    try:
+        sys("mkdir {}".format(game))
+    except:
+        pass
+
     model = buildmodel(game)
 
-def getAction(data):
+def getAction(data,randomAction=False):
     global step
     global OBSERVE
     global model
     global last_state
+    global epsilon
+
 
     step += 1
     last_state[0,(model_shape-int(model_shape/FRAMES)):model_shape] = data
-    if(len(D)<=BATCH):
+    
+    #case of observation
+    if randomAction:
         return random.choice(range(ACTIONS))
+
+    #asking to the agent
     else:
-        q = model.predict(last_state)
-        max_Q = np.argmax(q)
-        action_index = max_Q
+        #epsilon-gredy
+        if(random.random()<=epsilon):
+            #print("********************* \n*   RANDOM ACTION   *\n*********************")
+            action_index = random.choice(range(ACTIONS))
+        
+        #predict
+        else:
+            q = model.predict(last_state)
+            max_Q = np.argmax(q)
+            action_index = max_Q
+        
+        #decreasing epsilon 
+        epsilon *= epsilon_decay
 
         return action_index
 
@@ -126,19 +150,21 @@ def train(data,r_t,action):
 
     global D
     global model
-
     loss = 0
-    Q_sa = 0
-    action_index = 0
-
     #sample a minibatch to train on
     if(len(D)<BATCH):
-        return None
+        # n = len(D)
+        # minibatch = random.sample(D, n)
+        # inputs = np.zeros((n, model_shape)) 
+        # targets = np.zeros((n, ACTIONS))
+        minibatch  = random.sample(D,1)
+        inputs = np.zeros((1,model_shape))
+        targets = np.zeros((1,ACTIONS))
 
-    minibatch = random.sample(D, BATCH)
-
-    inputs = np.zeros((BATCH, model_shape)) #BATCH, 16
-    targets = np.zeros((BATCH, ACTIONS))    #BATCH, 2
+    else:
+        minibatch = random.sample(D, BATCH)
+        inputs = np.zeros((BATCH, model_shape)) 
+        targets = np.zeros((BATCH, ACTIONS))
 
     #Now we do the experience replay
     for i in range(0, len(minibatch)):
@@ -157,13 +183,21 @@ def train(data,r_t,action):
 
         targets[i, action_t] = reward_t + GAMMA * np.max(Q_sa)
 
-    loss += model.train_on_batch(inputs, targets)
+    loss += sum(model.train_on_batch(inputs, targets))
     #print(loss)
-    # save progress every 100 iterations
-    if step % 300 == 0:
-        global game
-        #print("Saving the model")
-        model.save("{}.h5".format(game), overwrite=True)
-        # with open("{}.json".format(game), "w") as outfile:
-        #     json.dump(model.to_json(), outfile)
+    # # save progress every 100 iterations
+    # if step % 300 == 0:
+    #     global game
+    #     print("Saving the model")
+    #     model.save("{}.h5".format(game), overwrite=True)
+    #     with open("{}.json".format(game), "w") as outfile:
+    #         json.dump(model.to_json(), outfile)
     return loss
+
+def saveModel():
+    model.save("{}/model.h5".format(game), overwrite=True)
+
+def saveStatistics(statistics):
+    for s in statistics:
+        with open("{}/{}.csv".format(game,s),"w") as f:
+            f.write("\n".join(map(str,statistics[s])))

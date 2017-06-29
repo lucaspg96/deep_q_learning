@@ -6,63 +6,79 @@ import bot
 def run_game(game_name,epochs,ev,observe=100):
 	env = gym.make(game_name)
 	observation = env.reset() # reset for each new trial
-	learn.init(env.action_space.n,game_name,observation,batch=128)
+	learn.init(env.action_space.n,game_name,observation,batch=64)
 	step = 0
 	points = []
 
 	print("Starting observations:")
+	while(step<observe):
+		action = learn.getAction(observation,randomAction=True)
+		observation, reward, done, info = env.step(action)
+		learn.train(observation,reward,action)
+		step+=1
+		if done:
+			env.reset()
+
+	losses = []
+	scores = []
 	record = 0
-	for i in trange(epochs+ev):
+	print("Starting train:")
+	for _ in trange(epochs):
 		#keep restarting game when ends 
-		t = 0
-		s=0
-		while True: # run for 100 timesteps or until done, whichever is first
-			env.render()
-			t+=1
-			step+=1
-			
-			if step<=observe:
-				action = env.action_space.sample()
-			else:
-				action = learn.getAction(observation)
+		#t=0 # steps on match
+		s=0 # Scores
+
+		while True:
+			#env.render()
+			#t+=1
+			step+=1 #global step
+
+			action = learn.getAction(observation)
 
 			observation, reward, done, info = env.step(action)
 
 			s+=reward
 
-			if step>observe:
-				learn.train(observation,reward,action)
+			losses.append(learn.train(observation,reward,action))
 
 			if done:
 				#print("Score: {}".format(s))
+				scores.append(s)
 				if s>record:
 					record = s
 					print("New record: {}".format(record))
-				if i>=epochs:
-					points.append(s)
 				break
+			if step%1000==0:
+				learn.saveModel()
 
 		observation = env.reset() # reset for each new trial
 
-	# print("Evaluating:")
-	# observation = env.reset()
-	# for i in trange(ev):
-	#	 t = 0
-	#	 s=0
-	#	 while True: 
-	#		 env.render()
-	#		 t+=1
+	print("Evaluating:")
+	observation = env.reset()
+	for i in trange(ev):
+		 t = 0
+		 s=0
+		 while True: 
+			 #env.render()
+			 t+=1
 			
-	#		 action = learn.getAction(observation)
-	#		 observation, reward, done, info = env.step(action)
-	#		 s+=reward
-	#		 learn.storeMem(observation,reward,action)
-	#		 if done:
-	#		 	points.append(s)
-	#		 	break
+			 action = learn.getAction(observation)
+			 observation, reward, done, info = env.step(action)
+			 s+=reward
+			 learn.storeMem(observation,reward,action)
+			 if done:
+			 	points.append(s)
+			 	break
 
-	#	 observation = env.reset() # reset for each new trial
-	return points
+		 observation = env.reset() # reset for each new trial
+
+	statistics = {
+		"train_loss":losses,
+		"train_scores": scores,
+		"test_scores": points
+	}
+	learn.saveStatistics(statistics)
+
 
 #Main bloc ---------------------------------------
 games = [ \
@@ -76,9 +92,6 @@ games = [ \
 		#'Breakout-v0'
 		]
 for game_name in games:
-	epochs = 5000
-	ev = 2000
-	points = run_game(game_name,epochs,ev,1000)
-	mean = float(sum(points)/len(points))
-	print("Mean score: {}".format(mean))
-	bot.send("{} trained {} epochs and evaluated in {} scores".format(game_name,epochs,mean))
+	epochs = 1000
+	ev = 100
+	run_game(game_name,epochs,ev,500)
