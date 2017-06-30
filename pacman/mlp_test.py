@@ -6,7 +6,7 @@ import bot
 def run_game(game_name,epochs,ev,observe=100):
 	env = gym.make(game_name)
 	observation = env.reset() # reset for each new trial
-	learn.init(env.action_space.n,game_name,observation,batch=64)
+	learn.init(env.action_space.n,game_name,observation,batch=32)
 	step = 0
 	points = []
 
@@ -42,17 +42,15 @@ def run_game(game_name,epochs,ev,observe=100):
 			losses.append(learn.train(observation,reward,action))
 
 			if done:
-				#print("Score: {}".format(s))
 				scores.append(s)
-				if s>record:
-					record = s
-					print("New record: {}".format(record))
 				break
+			
 			if step%1000==0:
 				learn.saveModel()
 
 		observation = env.reset() # reset for each new trial
 
+	learn.saveModel()
 	print("Evaluating:")
 	observation = env.reset()
 	for i in trange(ev):
@@ -62,10 +60,10 @@ def run_game(game_name,epochs,ev,observe=100):
 			 #env.render()
 			 t+=1
 			
-			 action = learn.getAction(observation)
+			 action = learn.getAction(observation,evaluate=True)
 			 observation, reward, done, info = env.step(action)
 			 s+=reward
-			 learn.storeMem(observation,reward,action)
+			 #learn.storeMem(observation,reward,action)
 			 if done:
 			 	points.append(s)
 			 	break
@@ -82,16 +80,16 @@ def run_game(game_name,epochs,ev,observe=100):
 
 #Main bloc ---------------------------------------
 games = [ \
-		'CartPole-v0' \
+		#'CartPole-v0' \
 		#'MsPacman-ram-v0'
 		# ,'MountainCar-v0' \
-		# ,'LunarLander-v2' \
+		'LunarLander-v2' \
 		# 'MsPacman-v0'
 		#'SpaceInvaders-v0'
 		#'Pong-v0'
 		#'Breakout-v0'
 		]
 for game_name in games:
-	epochs = 1000
-	ev = 100
+	epochs = 5000
+	ev = 500
 	run_game(game_name,epochs,ev,500)

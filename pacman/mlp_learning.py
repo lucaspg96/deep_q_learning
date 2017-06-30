@@ -22,13 +22,13 @@ import tensorflow as tf
 from skimage import io, exposure, img_as_uint, img_as_float
 
 ACTIONS = 0 # number of valid actions
-GAMMA = 0.95 # decay rate of past observations
+GAMMA = 0.9 # decay rate of past observations
 REPLAY_MEMORY = 50000 # number of previous transitions to remember
 BATCH = 0 # size of minibatch
-LEARNING_RATE = 0.05
+LEARNING_RATE = 0.005
 FRAMES = 1
-epsilon = 1
-epsilon_decay = 0.99
+epsilon = 0.7
+epsilon_decay = 0.999
 model_shape = None
 step = 0
 game = ""
@@ -37,14 +37,14 @@ def buildmodel(name):
     print("Initialyzing model...")
     model = Sequential()
     print("Model dim:",model_shape)
-    model.add(Dense(18,activation="sigmoid",input_dim=model_shape))
-    model.add(Dense(ACTIONS,activation="sigmoid"))
+    model.add(Dense(ACTIONS,activation="sigmoid",input_dim=model_shape))
+    # model.add(Dense(18,activation="sigmoid"))
     # model.add(Dense(20,activation="sigmoid"))
     # model.add(Dense(ACTIONS))
        
     #optimizer = Adam(lr=LEARNING_RATE, decay = 0.001)
     optimizer = SGD(lr=LEARNING_RATE,decay=0.01)
-    model.compile(loss='mse',optimizer=optimizer,metrics=["accuracy"])
+    model.compile(loss='mse',optimizer=optimizer)
     print("We finish building the model")
 
     try:
@@ -69,6 +69,9 @@ last_state = None
 D = None
 
 def init(n_actions,game_name,observation,batch=32):
+    import os
+    os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
+
     global ACTIONS
     global model
     global step
@@ -96,7 +99,7 @@ def init(n_actions,game_name,observation,batch=32):
 
     model = buildmodel(game)
 
-def getAction(data,randomAction=False):
+def getAction(data,randomAction=False,evaluate=False):
     global step
     global OBSERVE
     global model
@@ -113,21 +116,29 @@ def getAction(data,randomAction=False):
 
     #asking to the agent
     else:
-        #epsilon-gredy
-        if(random.random()<=epsilon):
-            #print("********************* \n*   RANDOM ACTION   *\n*********************")
-            action_index = random.choice(range(ACTIONS))
-        
-        #predict
-        else:
+        # on evaluate, always get the predicted action
+        if evaluate:
             q = model.predict(last_state)
             max_Q = np.argmax(q)
             action_index = max_Q
-        
-        #decreasing epsilon 
-        epsilon *= epsilon_decay
+            return action_index
 
-        return action_index
+        else:
+            #epsilon-gredy
+            if(random.random()<=epsilon):
+                #print("********************* \n*   RANDOM ACTION   *\n*********************")
+                action_index = random.choice(range(ACTIONS))
+            
+            #predict
+            else:
+                q = model.predict(last_state)
+                max_Q = np.argmax(q)
+                action_index = max_Q
+            
+            #decreasing epsilon 
+            epsilon *= epsilon_decay
+
+            return action_index
 
 def storeMem(data,r_t,action):
     global D
@@ -183,7 +194,7 @@ def train(data,r_t,action):
 
         targets[i, action_t] = reward_t + GAMMA * np.max(Q_sa)
 
-    loss += sum(model.train_on_batch(inputs, targets))
+    loss += model.train_on_batch(inputs, targets)
     #print(loss)
     # # save progress every 100 iterations
     # if step % 300 == 0:
