@@ -5,6 +5,7 @@ from skimage import transform, color, exposure
 from skimage.transform import rotate
 from skimage.viewer import ImageViewer
 import sys
+import os
 import random
 import numpy as np
 from collections import deque
@@ -22,11 +23,12 @@ import tensorflow as tf
 from skimage import io, exposure, img_as_uint, img_as_float
 
 ACTIONS = 4 # number of valid actions
-GAMMA = 0.90 # decay rate of past observations
+GAMMA = 0.99 # decay rate of past observations
 REPLAY_MEMORY = 50000 # number of previous transitions to remember
-BATCH = 100 # size of minibatch
+BATCH = 32 # size of minibatch
 LEARNING_RATE = 0.005
-
+epsilon = 1
+epsilon_decay = 0.99
 
 img_rows , img_cols = 80, 80
 #Convert image into Black and white
@@ -39,26 +41,18 @@ def buildmodel(name):
     global model_shape
 
     model = Sequential()
-
-    if(model_shape[1]==1):
-        model.add(Convolution2D(30, 8, 1,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
-        # model.add(Activation('relu'))
-        model.add(Convolution2D(50, 4, 1,activation="relu", subsample=(2, 2), border_mode='same'))
-        # model.add(Activation('relu'))
-        model.add(Convolution2D(50, 3, 1,activation="relu", subsample=(1, 1), border_mode='same'))
-        # model.add(Activation('relu'))
-    else:        
-        model.add(Convolution2D(30, 8, 8,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
-        # model.add(Activation('relu'))
-        model.add(Convolution2D(50, 4, 4,activation="relu", subsample=(2, 2), border_mode='same'))
-        # model.add(Activation('relu'))
-        model.add(Convolution2D(50, 3, 3,activation="relu", subsample=(1, 1), border_mode='same'))
-        # model.add(Activation('relu'))
+  
+    model.add(Convolution2D(32, 8, 8,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
+    # model.add(Activation('relu'))
+    model.add(Convolution2D(64, 5, 5,activation="relu", subsample=(2, 2), border_mode='same'))
+    # model.add(Activation('relu'))
+    model.add(Convolution2D(64, 3, 3,activation="relu", subsample=(1, 1), border_mode='same'))
+    # model.add(Activation('relu'))
     
     model.add(Flatten())
-    model.add(Dense(512))
+    model.add(Dense(256))
     model.add(Activation('relu'))
-    model.add(Dense(ACTIONS))
+    model.add(Dense(ACTIONS, activation="sigmoid"))
        
     adam = Adam(lr=LEARNING_RATE, decay = 0.001)
     model.compile(loss='mse',optimizer=adam)
@@ -68,12 +62,11 @@ def buildmodel(name):
         print("Trying load model weights for {}".format(name))
         # with open("{}.json".format(name)) as f:
         #     model = model_from_json(f.read())
-        model = load_model("{}.h5".format(name))
+        model.load_wheigts("{}/model.h5".format(name))
         print("Weights loaded")
 
     except Exception as e:
-        print(e)
-        print("Model weights not found".format(name))
+        print("Model weights not found")
 
         # #model.save_weights("{}.h5".format(name), overwrite=True)
         # with open("{}.json".format(name), "w") as outfile:
@@ -105,6 +98,8 @@ def init(n_actions,game_name,image,batch=100):
     global BATCH
     global D
 
+    os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
+    
     step = 0
     ACTIONS = n_actions
     BATCH = batch
@@ -126,11 +121,12 @@ def init(n_actions,game_name,image,batch=100):
     s_t = s_t.reshape(1, s_t.shape[0], s_t.shape[1], s_t.shape[2])  #1*80*80*4 
     print(s_t.shape,model_shape)  
 
-def getAction(image):
+def getAction(image,randomAction=False,evaluate=False):
     global s_t
     global step
     global OBSERVE
     global model
+    global epsilon
 
     step += 1
 
@@ -143,12 +139,36 @@ def getAction(image):
     
     s_t = np.append(x_t,s_t[:, :, :, :3], axis=3)
     
-    #print("Predict")
-    q = model.predict(s_t)       #input a stack of 4 images, get the prediction
-    max_Q = np.argmax(q)
-    action_index = max_Q
+    
+    #case of observation
+    if randomAction:
+        return random.choice(range(ACTIONS))
 
-    return action_index
+    #asking to the agent
+    else:
+        # on evaluate, always get the predicted action
+        if evaluate:
+            q = model.predict(s_t)
+            max_Q = np.argmax(q)
+            action_index = max_Q
+            return action_index
+
+        else:
+            #epsilon-gredy
+            if(random.random()<=epsilon):
+                #print("********************* \n*   RANDOM ACTION   *\n*********************")
+                action_index = random.choice(range(ACTIONS))
+            
+            #predict
+            else:
+                q = model.predict(s_t)
+                max_Q = np.argmax(q)
+                action_index = max_Q
+            
+            #decreasing epsilon 
+            epsilon *= epsilon_decay
+
+            return action_index
 
 def storeMem(image,r_t,action):
     global s_t
@@ -166,7 +186,9 @@ def storeMem(image,r_t,action):
     if len(D) > REPLAY_MEMORY:
         D.popleft()
 
-def train():    
+def train(image,r_t,action):
+    storeMem(image,r_t,action)
+
     #run the selected action and observed next state and reward 
     global D
     global model
@@ -176,11 +198,20 @@ def train():
     r_t = 0
     s_t,action,r_t,s_t1 = D[-1]
     #sample a minibatch to train on
-    minibatch = random.sample(D, BATCH)
 
-    #print(s_t.shape,s_t1.shape)
-    inputs = np.zeros((BATCH, s_t.shape[1], s_t.shape[2], s_t.shape[3]))   #32, 80, 80, 4
-    targets = np.zeros((inputs.shape[0], ACTIONS))                         #32, 2
+    if(len(D)<BATCH):
+        # n = len(D)
+        # minibatch = random.sample(D, n)
+        # inputs = np.zeros((n, model_shape)) 
+        # targets = np.zeros((n, ACTIONS))
+        minibatch  = random.sample(D,1)
+        inputs = np.zeros((1,s_t.shape[1], s_t.shape[2], s_t.shape[3]))
+        targets = np.zeros((1,ACTIONS))
+
+    else:
+        minibatch = random.sample(D, BATCH)
+        inputs = np.zeros((BATCH, s_t.shape[1], s_t.shape[2], s_t.shape[3])) 
+        targets = np.zeros((BATCH, ACTIONS))
 
     #Now we do the experience replay
     for i in range(0, len(minibatch)):
@@ -199,13 +230,6 @@ def train():
 
     # targets2 = normalize(targets)
     loss += model.train_on_batch(inputs, targets)
-    # save progress every 100 iterations
-    if step % 300 == 0:
-        global game
-        print("Saving the model")
-        model.save("{}.h5".format(game), overwrite=True)
-        # with open("{}.json".format(game), "w") as outfile:
-        #     json.dump(model.to_json(), outfile)
     return loss
 
 def saveImage(img):
@@ -216,3 +240,11 @@ def saveImage(img):
     im = img_as_uint(im)
 
     io.imsave('test({}x{}).png'.format(img.shape[0],img.shape[1]), im)
+
+def saveModel():
+    model.save("{}/model.h5".format(game), overwrite=True)
+
+def saveStatistics(statistics):
+    for s in statistics:
+        with open("{}/{}.csv".format(game,s),"w") as f:
+            f.write("\n".join(map(str,statistics[s])))

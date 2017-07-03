@@ -22,12 +22,12 @@ import tensorflow as tf
 from skimage import io, exposure, img_as_uint, img_as_float
 
 ACTIONS = 0 # number of valid actions
-GAMMA = 0.9 # decay rate of past observations
+GAMMA = 0.99 # decay rate of past observations
 REPLAY_MEMORY = 50000 # number of previous transitions to remember
 BATCH = 0 # size of minibatch
-LEARNING_RATE = 0.005
+LEARNING_RATE = 0.05
 FRAMES = 1
-epsilon = 0.7
+epsilon = 1
 epsilon_decay = 0.999
 model_shape = None
 step = 0
@@ -38,12 +38,11 @@ def buildmodel(name):
     model = Sequential()
     print("Model dim:",model_shape)
     model.add(Dense(ACTIONS,activation="sigmoid",input_dim=model_shape))
-    # model.add(Dense(18,activation="sigmoid"))
+    # model.add(Dense(ACTIONS,activation="sigmoid"))
     # model.add(Dense(20,activation="sigmoid"))
-    # model.add(Dense(ACTIONS))
        
     #optimizer = Adam(lr=LEARNING_RATE, decay = 0.001)
-    optimizer = SGD(lr=LEARNING_RATE,decay=0.01)
+    optimizer = SGD(lr=LEARNING_RATE,decay=0.001)
     model.compile(loss='mse',optimizer=optimizer)
     print("We finish building the model")
 
@@ -51,7 +50,7 @@ def buildmodel(name):
         print("Trying load model weights for {}".format(name))
         # with open("{}.json".format(name)) as f:
         #     model = model_from_json(f.read())
-        model = load_model("{}/model.h5".format(name))
+        model.load_wheigts("{}/model.h5".format(name))
         print("Weights loaded")
 
     except Exception as e:

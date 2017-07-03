@@ -1,7 +1,7 @@
 import gym
 import mlp_learning as learn
 from tqdm import trange
-import bot
+import os
 
 def run_game(game_name,epochs,ev,observe=100):
 	env = gym.make(game_name)
@@ -10,8 +10,9 @@ def run_game(game_name,epochs,ev,observe=100):
 	step = 0
 	points = []
 
+	os.system("clear")
 	print("Starting observations:")
-	while(step<observe):
+	for _ in trange(observe):
 		action = learn.getAction(observation,randomAction=True)
 		observation, reward, done, info = env.step(action)
 		learn.train(observation,reward,action)
@@ -22,6 +23,7 @@ def run_game(game_name,epochs,ev,observe=100):
 	losses = []
 	scores = []
 	record = 0
+
 	print("Starting train:")
 	for _ in trange(epochs):
 		#keep restarting game when ends 
@@ -80,16 +82,16 @@ def run_game(game_name,epochs,ev,observe=100):
 
 #Main bloc ---------------------------------------
 games = [ \
-		#'CartPole-v0' \
+		'CartPole-v0' \
 		#'MsPacman-ram-v0'
 		# ,'MountainCar-v0' \
-		'LunarLander-v2' \
+		#'LunarLander-v2' \
 		# 'MsPacman-v0'
 		#'SpaceInvaders-v0'
 		#'Pong-v0'
 		#'Breakout-v0'
 		]
 for game_name in games:
-	epochs = 5000
-	ev = 500
-	run_game(game_name,epochs,ev,500)
+	epochs = 1000
+	ev = 100
+	run_game(game_name,epochs,ev,200)
