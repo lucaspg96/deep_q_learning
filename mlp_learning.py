@@ -25,10 +25,10 @@ ACTIONS = 0 # number of valid actions
 GAMMA = 0.99 # decay rate of past observations
 REPLAY_MEMORY = 50000 # number of previous transitions to remember
 BATCH = 0 # size of minibatch
-LEARNING_RATE = 0.05
+LEARNING_RATE = 0.005
 FRAMES = 1
 epsilon = 1
-epsilon_decay = 0.999
+epsilon_decay = 0.99
 model_shape = None
 step = 0
 game = ""
@@ -42,7 +42,7 @@ def buildmodel(name):
     # model.add(Dense(20,activation="sigmoid"))
        
     #optimizer = Adam(lr=LEARNING_RATE, decay = 0.001)
-    optimizer = SGD(lr=LEARNING_RATE,decay=0.001)
+    optimizer = SGD(lr=LEARNING_RATE)
     model.compile(loss='mse',optimizer=optimizer)
     print("We finish building the model")
 

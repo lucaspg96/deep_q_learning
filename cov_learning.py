@@ -54,7 +54,7 @@ def buildmodel(name):
     model.add(Activation('relu'))
     model.add(Dense(ACTIONS, activation="sigmoid"))
        
-    adam = Adam(lr=LEARNING_RATE, decay = 0.001)
+    adam = Adam(lr=LEARNING_RATE)
     model.compile(loss='mse',optimizer=adam)
     print("We finish building the model")
 

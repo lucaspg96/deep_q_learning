@@ -92,6 +92,6 @@ games = [ \
 		#'Breakout-v0'
 		]
 for game_name in games:
-	epochs = 1000
-	ev = 100
-	run_game(game_name,epochs,ev,200)
+	epochs = 10000
+	ev = 1000
+	run_game(game_name,epochs,ev,1000)
