@@ -24,9 +24,9 @@ from skimage import io, exposure, img_as_uint, img_as_float
 
 ACTIONS = 4 # number of valid actions
 GAMMA = 0.99 # decay rate of past observations
-REPLAY_MEMORY = 50000 # number of previous transitions to remember
+REPLAY_MEMORY = 5000 # number of previous transitions to remember
 BATCH = 32 # size of minibatch
-LEARNING_RATE = 0.005
+LEARNING_RATE = 0.0001
 epsilon = 1
 epsilon_decay = 0.99
 
@@ -42,7 +42,7 @@ def buildmodel(name):
 
     model = Sequential()
   
-    model.add(Convolution2D(32, 8, 8,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
+    model.add(Convolution2D(64, 4, 4,activation="relu", subsample=(4, 4), border_mode='same',input_shape=(model_shape)))  #80*80*4
     # model.add(Activation('relu'))
     model.add(Convolution2D(64, 5, 5,activation="relu", subsample=(2, 2), border_mode='same'))
     # model.add(Activation('relu'))
@@ -50,9 +50,11 @@ def buildmodel(name):
     # model.add(Activation('relu'))
     
     model.add(Flatten())
-    model.add(Dense(256))
-    model.add(Activation('relu'))
-    model.add(Dense(ACTIONS, activation="sigmoid"))
+    model.add(Dense(512))
+    model.add(Activation('sigmoid'))
+    model.add(Dense(128))
+    model.add(Activation('sigmoid'))
+    model.add(Dense(ACTIONS))
        
     adam = Adam(lr=LEARNING_RATE)
     model.compile(loss='mse',optimizer=adam)
@@ -114,7 +116,7 @@ def init(n_actions,game_name,image,batch=100):
         model_shape = (img_rows,img_cols,4)
         game = "{}({}x{})".format(game_name,x_t.shape[0],x_t.shape[1])
         saveImage(x_t)
-    
+    game = game.lower()
     model = buildmodel(game)
     
     s_t = np.stack((x_t,x_t,x_t,x_t),axis=2)
@@ -239,10 +241,10 @@ def saveImage(img):
     im = exposure.rescale_intensity(img, out_range='float')
     im = img_as_uint(im)
 
-    io.imsave('test({}x{}).png'.format(img.shape[0],img.shape[1]), im)
+    io.imsave('{}({}x{}).png'.format(game,img.shape[0],img.shape[1]), im)
 
 def saveModel():
-    model.save("{}/model.h5".format(game), overwrite=True)
+    model.save_weights("{}/model.h5".format(game), overwrite=True)
 
 def saveStatistics(statistics):
     for s in statistics:

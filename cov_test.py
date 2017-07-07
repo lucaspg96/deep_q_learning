@@ -3,6 +3,8 @@ import cov_learning as learn
 from tqdm import trange
 import os
 
+acts = 4
+
 def run_game(game_name,epochs,ev,observe=50):
 	env = gym.make(game_name)
 	observation = env.reset() # reset for each new trial
@@ -31,23 +33,26 @@ def run_game(game_name,epochs,ev,observe=50):
 		s=0 # Scores
 
 		while True:
-			#env.render()
 			#t+=1
 			step+=1 #global step
 
 			action = learn.getAction(observation)
+			#print(action)
+			for _ in range(acts):
+				env.render()
+				env.step(action)				
 
+			env.render()
 			observation, reward, done, info = env.step(action)
 
 			s+=reward
-
-			losses.append(learn.train(observation,reward,action))
 
 			if done:
 				scores.append(s)
 				break
 			
-			if step%100==0:
+			if step%10==0:
+				losses.append(learn.train(observation,reward,action))
 				learn.saveModel()
 
 		observation = env.reset() # reset for each new trial
@@ -59,7 +64,7 @@ def run_game(game_name,epochs,ev,observe=50):
 		 t = 0
 		 s=0
 		 while True: 
-			 #env.render()
+			 env.render()
 			 t+=1
 			
 			 action = learn.getAction(observation,evaluate=True)
@@ -90,9 +95,9 @@ games = [ \
 		#'Breakout-v0'
 		]
 for game_name in games:
-	epochs = 100
+	epochs = 1000
 	ev = 10
-	points = run_game(game_name,epochs,ev,1000)
+	points = run_game(game_name,epochs,ev,0)
 	mean = float(sum(points)/len(points))
 	print("Mean score: {}".format(mean))
 	bot.send("{} trained {} epochs and evaluated in {} scores".format(game_name,epochs,mean))

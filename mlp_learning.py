@@ -25,7 +25,7 @@ ACTIONS = 0 # number of valid actions
 GAMMA = 0.99 # decay rate of past observations
 REPLAY_MEMORY = 50000 # number of previous transitions to remember
 BATCH = 0 # size of minibatch
-LEARNING_RATE = 0.005
+LEARNING_RATE = 0.01
 FRAMES = 1
 epsilon = 1
 epsilon_decay = 0.99
@@ -37,9 +37,9 @@ def buildmodel(name):
     print("Initialyzing model...")
     model = Sequential()
     print("Model dim:",model_shape)
-    model.add(Dense(ACTIONS,activation="sigmoid",input_dim=model_shape))
-    # model.add(Dense(ACTIONS,activation="sigmoid"))
-    # model.add(Dense(20,activation="sigmoid"))
+    model.add(Dense(10,activation="sigmoid",input_dim=model_shape))
+    model.add(Dense(15,activation="sigmoid"))
+    model.add(Dense(ACTIONS,activation="sigmoid"))
        
     #optimizer = Adam(lr=LEARNING_RATE, decay = 0.001)
     optimizer = SGD(lr=LEARNING_RATE)
@@ -89,7 +89,7 @@ def init(n_actions,game_name,observation,batch=32):
     observation = np.array(list(observation)*FRAMES)
     last_state = np.reshape(observation,(1,model_shape))
 
-    game = game_name    
+    game = game_name.lower()   
 
     try:
         sys("mkdir {}".format(game))

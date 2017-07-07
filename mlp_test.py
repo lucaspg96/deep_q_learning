@@ -6,7 +6,7 @@ import os
 def run_game(game_name,epochs,ev,observe=100):
 	env = gym.make(game_name)
 	observation = env.reset() # reset for each new trial
-	learn.init(env.action_space.n,game_name,observation,batch=32)
+	learn.init(env.action_space.n,game_name,observation,batch=128)
 	step = 0
 	points = []
 
@@ -31,23 +31,25 @@ def run_game(game_name,epochs,ev,observe=100):
 		s=0 # Scores
 
 		while True:
-			#env.render()
+			env.render()
 			#t+=1
 			step+=1 #global step
 
 			action = learn.getAction(observation)
 
+
 			observation, reward, done, info = env.step(action)
 
 			s+=reward
-
-			losses.append(learn.train(observation,reward,action))
+			loss = learn.train(observation,reward,action)
+			losses.append(loss)
+			print(loss)
 
 			if done:
 				scores.append(s)
 				break
 			
-			if step%1000==0:
+			if step%100==0:
 				learn.saveModel()
 
 		observation = env.reset() # reset for each new trial
@@ -59,7 +61,7 @@ def run_game(game_name,epochs,ev,observe=100):
 		 t = 0
 		 s=0
 		 while True: 
-			 #env.render()
+			 env.render()
 			 t+=1
 			
 			 action = learn.getAction(observation,evaluate=True)
@@ -92,6 +94,6 @@ games = [ \
 		#'Breakout-v0'
 		]
 for game_name in games:
-	epochs = 10000
-	ev = 1000
-	run_game(game_name,epochs,ev,1000)
+	epochs = 1000
+	ev = 100
+	run_game(game_name,epochs,ev,200)
